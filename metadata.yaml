@@ -1,0 +1,11 @@
+ensemble: formula
+name: rails
+revision: 1
+summary: "Ensemble formula to install Ruby on Rails"
+description: "Ensemble formula to install Ruby on Rails"
+requires:
+  db:
+    interface: mysql
+provides:
+  website:
+    interface: http
