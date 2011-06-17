@@ -1,0 +1,89 @@
+#!/bin/bash
+
+export TERM=linux
+
+ensemble-log "Database relation joined"
+
+# Install a dummy rails app created for this formula.
+# You should pull your own app here.
+ensemble-log "Pull your rails app into /opt"
+cd /opt
+apt-get -y install -qq git-core
+umask 022
+git clone http://github.com/mmm/testrails.git
+
+#chown -Rf ubuntu.ubuntu testrails
+#mmm maybe sudo -u ubuntu for all filesystem stuff...
+
+cd /opt/testrails/
+#   app name
+#   repo location
+#   repo type
+# is it easy to externalize these?
+
+#can different frontend nodes be out of sync?
+# should probably get same commit as first unit
+
+apt-get -y install -qq libmysqlclient16 libmysqlclient16-dev ruby-dev
+
+# mysql cli for debugging
+#apt-get -y install -qq mysql-client-core-5.1
+
+
+ensemble-log "Writing database.yml"
+database=`relation-get database`
+user=`relation-get user`
+password=`relation-get password`
+host=`relation-get host`
+cat > config/database.yml <<EOS
+production:
+  adapter: mysql 
+  database: ${database}
+  username: ${user}
+  password: ${password}
+  host: ${host}
+EOS
+
+# should this handle both mysql and mongo datastores?
+# would this require gems or can we still handle it with packages?
+
+REALLY_GEM_UPDATE_SYSTEM=true gem update --system
+gem install 'bundler' --no-ri --no-rdoc
+sed -i 's/sqlite3/mysql/' Gemfile
+bundle install
+
+ensemble-log "Migrating database"
+rake RAILS_ENV=production db:migrate
+
+ensemble-log "Seeding database"
+rake RAILS_ENV=production db:seed
+# only do this once!
+
+#ensemble-log "Writing apache/passenger vhost"
+#write vhost file with new relation information
+cat > /etc/apache2/conf.d/rails.conf <<EOS
+<VirtualHost *:80>
+    ServerSignature Off
+    DocumentRoot /opt/testrails/public
+    <Directory /opt/testrails/public>
+        AllowOverride all
+        Options -MultiViews
+    </Directory>
+    LogLevel warn
+    ErrorLog /var/log/apache2/testrails-error.log
+    CustomLog /var/log/apache2/testrails-access.log combined
+</VirtualHost>
+EOS
+
+ensemble-log "Start Passenger"
+service apache2 restart
+
+#
+#set -x
+#echo $ENSEMBLE_REMOTE_UNIT modified its settings
+#echo Relation settings:
+#relation-get --format json
+#echo Relation members:
+#relation-list
+#true
+#
