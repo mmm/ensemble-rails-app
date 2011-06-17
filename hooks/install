@@ -1,26 +1,7 @@
 #!/bin/bash
 
-#mmm add kirkland's license blurf here (and as a vim template)
-
 set -eu # -x for verbose logging to ensemble debug-log
 
-#mmm already installed?
-#if [ -L /etc/apache2/conf.d/drupal6.conf ]; then
-#  ensemble-log "Drupal site already configured, exiting"
-#  echo "Already Configured, Exiting"
-#  exit 0
-#fi
-
-#RELEASE_CODE=`lsb_release -a | awk '/Codename/ { print $2 }'`
-#add-apt-repository "deb http://archive.canonical.com/ ${RELEASE_CODE} partner"
-#apt-get update
-
-#apt-get -y install -qq --no-install-recommends debconf-utils 
-
-
-ensemble-log "Installing rails"
-#add-apt-repository ppa:canonical-sig/thirdparty
-#apt-get update
-apt-get -y install -qq rails
-
+ensemble-log "Installing rails, apache, passenger"
+apt-get -y install -qq rails libapache2-mod-passenger
 
