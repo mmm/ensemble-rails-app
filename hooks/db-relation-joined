@@ -52,12 +52,15 @@ gem install 'bundler' --no-ri --no-rdoc
 sed -i 's/sqlite3/mysql/' Gemfile
 bundle install
 
-ensemble-log "Migrating database"
-rake RAILS_ENV=production db:migrate
+db_version=`rake RAILS_ENV=production db:version | awk '/Current version:/ { print $3 }'`
+ensemble-log "Current database version: ${db_version}"
+if [ ${db_version} -eq 0 ]; then
+  ensemble-log "Migrating database"
+  rake RAILS_ENV=production db:migrate
 
-ensemble-log "Seeding database"
-rake RAILS_ENV=production db:seed
-# only do this once!
+  ensemble-log "Seeding database"
+  rake RAILS_ENV=production db:seed
+fi
 
 #ensemble-log "Writing apache/passenger vhost"
 #write vhost file with new relation information
