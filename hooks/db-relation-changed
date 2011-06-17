@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export TERM=linux
+
 ensemble-log "Database relation changed"
 
 # Install a dummy rails app created for this formula.
@@ -26,14 +28,17 @@ apt-get -y install -qq ruby-dev
 
 
 ensemble-log "Writing database.yml"
-#write database.yml file with new relation information
+database=`relation-get database`
+user=`relation-get user`
+password=`relation-get password`
+host=`relation-get host`
 cat > config/database.yml <<EOS
 production:
   adapter: mysql 
-  database: elastic_production 
-  username: elastic_user
-  password: elastic_user
-  host: blah
+  database: ${database}
+  username: ${user}
+  password: ${password}
+  host: ${host}
 EOS
 
 # should this handle both mysql and mongo datastores?
@@ -53,18 +58,29 @@ rake RAILS_ENV=production db:seed
 
 #ensemble-log "Writing apache/passenger vhost"
 #write vhost file with new relation information
-#cat > /etc/apache2/conf.d/rails.conf <<EOS
-#EOS
+cat > /etc/apache2/conf.d/rails.conf <<EOS
+<VirtualHost *:80>
+    ServerSignature Off
+    DocumentRoot /opt/testrails/public
+    <Directory /opt/testrails/public>
+        AllowOverride all
+        Options -MultiViews
+    </Directory>
+    LogLevel warn
+    ErrorLog /var/log/apache2/testrails-error.log
+    CustomLog /var/log/apache2/testrails-access.log combined
+</VirtualHost>
+EOS
 
 ensemble-log "Start Passenger"
 service apache2 restart
 
-
-set -x
-echo $ENSEMBLE_REMOTE_UNIT modified its settings
-echo Relation settings:
-relation-get --format json
-echo Relation members:
-relation-list
-true
-
+#
+#set -x
+#echo $ENSEMBLE_REMOTE_UNIT modified its settings
+#echo Relation settings:
+#relation-get --format json
+#echo Relation members:
+#relation-list
+#true
+#
