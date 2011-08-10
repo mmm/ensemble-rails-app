@@ -11,9 +11,7 @@ cd /opt
 apt-get -y install -qq git-core
 umask 022
 git clone http://github.com/mmm/testrails.git
-
-#chown -Rf ubuntu.ubuntu testrails
-#mmm maybe sudo -u ubuntu for all filesystem stuff...
+chown -Rf ubuntu.ubuntu testrails
 
 cd /opt/testrails/
 #   app name
@@ -24,7 +22,10 @@ cd /opt/testrails/
 #can different frontend nodes be out of sync?
 # should probably get same commit as first unit
 
-apt-get -y install -qq libmysqlclient16 libmysqlclient16-dev ruby-dev
+apt-get -y install -qq ruby-dev
+apt-get -y install -qq libmysqlclient16 libmysqlclient16-dev 
+apt-get -y install -qq libpgsql-ruby 
+# conditional based on database_type
 
 # mysql cli for debugging
 #apt-get -y install -qq mysql-client-core-5.1
@@ -35,9 +36,10 @@ database=`relation-get database`
 user=`relation-get user`
 password=`relation-get password`
 host=`relation-get host`
+database_type=`relation-get database_type`
 cat > config/database.yml <<EOS
 production:
-  adapter: mysql 
+  adapter: ${database_type} 
   database: ${database}
   username: ${user}
   password: ${password}
