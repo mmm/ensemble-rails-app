@@ -17,10 +17,10 @@ install_root=`config-get install_root`
 app_name=`config-get app_name`
 app_dir="$install_root/$app_name"
 bundle_has_db() {
-  grep 
+  grep -q mysql $app_dir/Gemfile
 }
 bundle_add_db() {
-  sed -i 's/sqlite3/mysql/' Gemfile #MMM!!!
+  sed -i 's/sqlite3/mysql/' Gemfile 
 }
 bundle_has_db || bundle_add_db
 
