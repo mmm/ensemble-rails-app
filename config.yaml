@@ -1,0 +1,5 @@
+options:
+  application_name:
+    type: str 
+    default: myapp
+    description: Application Name
