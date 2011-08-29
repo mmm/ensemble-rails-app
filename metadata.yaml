@@ -1,6 +1,6 @@
 ensemble: formula
-name: rails
-revision: 7
+name: rails-app
+revision: 10
 summary: "Ensemble formula to install Ruby on Rails"
 description: "Ensemble formula to install Ruby on Rails"
 requires:
