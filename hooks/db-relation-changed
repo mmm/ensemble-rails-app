@@ -1,13 +1,50 @@
 #!/bin/bash
 
-export TERM=linux
+ensemble-log "Database relation joined"
 
-ensemble-log "Database relation changed"
+host=`relation-get host`
+if [ -z "$host" ] ; then
+    ensemble-log "remote host not set yet."
+    exit 0
+fi
 
-set -x
-echo $ENSEMBLE_REMOTE_UNIT modified its settings
-echo Relation settings:
-relation-get --format json
-echo Relation members:
-relation-list
-true
+write_database_config() {
+  ensemble-log "Writing database.yml"
+  # should this handle both mysql and mongo datastores?
+  # would this require gems or can we still handle it with packages?
+  database=`relation-get database`
+  user=`relation-get user`
+  password=`relation-get password`
+  host=`relation-get host`
+  database_type="mysql" #`relation-get database_type`
+  cat > config/database.yml <<-EOS
+  production:
+    adapter: ${database_type} 
+    database: ${database}
+    username: ${user}
+    password: ${password}
+    host: ${host}
+  EOS
+}
+#write_database_config
+
+
+migrate_database() {
+  db_version=`rake RAILS_ENV=production db:version | awk '/Current version:/ { print $3 }'`
+  ensemble-log "Current database version: ${db_version}"
+  if [ ${db_version} -eq 0 ]; then
+    ensemble-log "Migrating database"
+    rake RAILS_ENV=production db:migrate
+
+    ensemble-log "Seeding database"
+    rake RAILS_ENV=production db:seed
+  fi
+}
+migrate_database
+
+ensemble-log "start passenger"
+service apache2 restart
+
+ensemble-log "opening port"
+ensemble open-port 80
+

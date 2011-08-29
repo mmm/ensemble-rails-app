@@ -1,5 +1,5 @@
 options:
-  application_name:
+  app_name:
     type: str 
     default: myapp
     description: Application Name

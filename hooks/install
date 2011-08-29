@@ -3,5 +3,58 @@
 set -eu # -x for verbose logging to ensemble debug-log
 
 ensemble-log "Installing ruby, apache, passenger"
-apt-get -y install -qq ruby rake libapache2-mod-passenger
+apt-get -y install -qq ruby ruby-dev rake libapache2-mod-passenger
+apt-get -y install -qq libmysqlclient16 libmysqlclient16-dev 
+apt-get -y install -qq libpgsql-ruby 
+
+install_dir="/opt"
+app_name=`config-get app_name`
+app_repo_url=`config-get app_repo_url`
+app_repo_branch=`config-get app_repo_branch`
+app_repo_type=`config-get app_repo_type`
+app_dir="$install_dir/$app_name"
+pull_git_app() {
+  apt-get -y install -qq git-core
+  git clone http://github.com/mmm/testrails.git -b $app_repo_branch $app_dir
+  sed -i 's/sqlite3/mysql/' Gemfile #MMM!!!
+}
+pull_bzr_app() {
+  apt-get -y install -qq git-core
+  bzr branch $app_repo_url -b $app_repo_branch $app_dir
+  sed -i 's/sqlite3/mysql/' Gemfile #MMM!!!
+}
+install_app() {
+  ensemble-log "Installing your rails app into $app_dir"
+  cd $install_dir
+  umask 022
+  pull_git_app
+  chown -Rf ubuntu.ubuntu $app_dir
+}
+[ -d $app_dir ] || install_app
+
+install_bundle() {
+  REALLY_GEM_UPDATE_SYSTEM=true gem update --system
+  gem install 'bundler' --no-ri --no-rdoc
+  cd $app_dir && bundle install
+}
+install_bundle
+
+vhost_file="/etc/apache2/conf.d/rails.conf"
+configure_passenger() {
+  ensemble-log "Writing apache/passenger config: $vhost_file"
+  cat > $vhost_file <<-EOS
+  <VirtualHost *:80>
+      ServerSignature Off
+      DocumentRoot $app_dir/public
+      <Directory $app_dir/public>
+          AllowOverride all
+          Options -MultiViews
+      </Directory>
+      LogLevel warn
+      ErrorLog /var/log/apache2/$app_name-error.log
+      CustomLog /var/log/apache2/$app_name-access.log combined
+  </VirtualHost>
+  EOS
+}
+[ -f $vhost_file ] || configure_passenger
 
