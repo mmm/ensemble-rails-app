@@ -3,8 +3,8 @@
 set -eu # -x for verbose logging to ensemble debug-log
 
 ensemble-log "Installing ruby, apache, passenger"
-apt-get -y install -qq ruby ruby-dev rake libapache2-mod-passenger
-apt-get -y install -qq libsqlite3-dev libsqlite3-ruby
+DEBIAN_FRONTEND=noninteractive apt-get -y install -qq ruby ruby-dev rake libapache2-mod-passenger
+DEBIAN_FRONTEND=noninteractive apt-get -y install -qq libsqlite3-dev libsqlite3-ruby
 
 install_root=`config-get install_root`
 app_name=`config-get app_name`
@@ -39,19 +39,19 @@ install_bundle
 vhost_file="/etc/apache2/conf.d/rails.conf"
 configure_passenger() {
   ensemble-log "Writing apache/passenger config: $vhost_file"
-  cat > $vhost_file <<-EOS
-  <VirtualHost *:80>
-      ServerSignature Off
-      DocumentRoot $app_dir/public
-      <Directory $app_dir/public>
-          AllowOverride all
-          Options -MultiViews
-      </Directory>
-      LogLevel warn
-      ErrorLog /var/log/apache2/$app_name-error.log
-      CustomLog /var/log/apache2/$app_name-access.log combined
-  </VirtualHost>
-  EOS
+  cat > $vhost_file <<EOS
+    <VirtualHost *:80>
+        ServerSignature Off
+        DocumentRoot $app_dir/public
+        <Directory $app_dir/public>
+            AllowOverride all
+            Options -MultiViews
+        </Directory>
+        LogLevel warn
+        ErrorLog /var/log/apache2/$app_name-error.log
+        CustomLog /var/log/apache2/$app_name-access.log combined
+    </VirtualHost>
+EOS
 }
 [ -f $vhost_file ] || configure_passenger
 

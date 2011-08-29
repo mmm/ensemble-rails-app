@@ -9,9 +9,9 @@ if [ -z "$host" ] ; then
 fi
 
 # mysql when joined to mysql
-apt-get -y install -qq libmysqlclient16 libmysqlclient16-dev 
+DEBIAN_FRONTEND=noninteractive apt-get -y install -qq libmysqlclient16 libmysqlclient16-dev 
 # pgsql when joined to pgsql
-apt-get -y install -qq libpgsql-ruby 
+DEBIAN_FRONTEND=noninteractive apt-get -y install -qq libpgsql-ruby 
 
 install_root=`config-get install_root`
 app_name=`config-get app_name`
@@ -31,23 +31,21 @@ update_bundle
 
 write_database_config() {
   ensemble-log "Writing database.yml"
-  # should this handle both mysql and mongo datastores?
-  # would this require gems or can we still handle it with packages?
   database=`relation-get database`
   user=`relation-get user`
   password=`relation-get password`
   host=`relation-get host`
   database_type="mysql" #`relation-get database_type`
-  cat > config/database.yml <<-EOS
-  production:
-    adapter: ${database_type} 
-    database: ${database}
-    username: ${user}
-    password: ${password}
-    host: ${host}
-  EOS
+  cat > "$app_dir/config/database.yml" <<EOS
+    production:
+      adapter: ${database_type}
+      database: ${database}
+      username: ${user}
+      password: ${password}
+      host: ${host}
+EOS
 }
-#write_database_config
+write_database_config
 
 
 migrate_database() {
@@ -61,11 +59,11 @@ migrate_database() {
     rake RAILS_ENV=production db:seed
   fi
 }
-#migrate_database
+migrate_database
 
-#ensemble-log "start passenger"
-#service apache2 restart
+ensemble-log "start passenger"
+service apache2 restart
 
-#ensemble-log "opening port"
-#ensemble open-port 80
+ensemble-log "opening port"
+ensemble open-port 80
 
