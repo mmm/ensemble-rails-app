@@ -20,7 +20,7 @@ bundle_has_db() {
   grep -q mysql $app_dir/Gemfile
 }
 bundle_add_db() {
-  sed -i 's/sqlite3/mysql/' Gemfile 
+  echo "gem 'mysql'" >> $app_dir/Gemfile
 }
 bundle_has_db || bundle_add_db
 
@@ -48,7 +48,11 @@ EOS
 write_database_config
 
 
+rake_will_run() {
+  cd $app_dir && `rake RAILS_ENV=production db:version`
+}
 migrate_database() {
+  cd $app_dir
   db_version=`rake RAILS_ENV=production db:version | awk '/Current version:/ { print $3 }'`
   ensemble-log "Current database version: ${db_version}"
   if [ ${db_version} -eq 0 ]; then
@@ -59,11 +63,11 @@ migrate_database() {
     rake RAILS_ENV=production db:seed
   fi
 }
-migrate_database
+rake_will_run && migrate_database
 
 ensemble-log "start passenger"
 service apache2 restart
 
-ensemble-log "opening port"
-ensemble open-port 80
+#ensemble-log "opening port"
+#ensemble open-port 80
 
